@@ -6,7 +6,7 @@ import sinon from 'sinon';
 
 // src
 import * as utils from 'src/utils';
-import {DEFAULT_OPTIONS} from 'src/constants';
+import {DEFAULT_OPTIONS, LIFECYCLE_METHODS} from 'src/constants';
 
 test('if createSingleLifecycleMethodDecorator returns a function', (t) => {
   const result = utils.createSingleLifecycleMethodDecorator();
@@ -140,7 +140,7 @@ test(
   (t) => {
     const invalidComponent = {};
     const invalidMethod = 'foo';
-    const validMethod = 'componentDidMount';
+    const validMethods = _.keys(LIFECYCLE_METHODS);
 
     const validComponent = {};
     const invalidStub = sinon.stub();
@@ -162,18 +162,32 @@ test(
 
     stub.restore();
 
-    const validResult = utils.setLifecycleMethods(
-      validComponent,
-      {
-        [validMethod]: validStub
-      },
-      DEFAULT_OPTIONS.injectProps
-    );
+    validMethods.forEach((validMethod) => {
+      const validResult = utils.setLifecycleMethods(
+        validComponent,
+        {
+          [validMethod]: validStub
+        },
+        DEFAULT_OPTIONS.injectProps
+      );
 
-    t.true(validResult.hasOwnProperty(validMethod));
-    t.true(_.isFunction(validResult[validMethod]));
+      t.true(validResult.hasOwnProperty(validMethod), `Expected ${validMethod} to be a valid lifecycle method`);
+      t.true(_.isFunction(validResult[validMethod]), `Expected ${validMethod} to be a function`);
+    });
   }
 );
+
+// See https://reactjs.org/blog/2018/03/27/update-on-async-rendering.html
+test('LIFECYCLE_METHODS should contain new methods introduced in React 16.3', (t) => {
+  const newMethods = [
+    'UNSAFE_componentWillMount',
+    'UNSAFE_componentWillReceiveProps',
+    'UNSAFE_componentWillUpdate',
+    'getSnapshotBeforeUpdate'
+  ];
+
+  t.deepEqual(newMethods, _.intersection(newMethods, _.keys(LIFECYCLE_METHODS)));
+});
 
 test('if setLifecycleMethods will fire a warning to the console if the method is valid but is not a function', (t) => {
   const component = {};

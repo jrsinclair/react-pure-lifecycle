@@ -7,7 +7,7 @@ import {mount} from 'enzyme';
 
 // src
 import * as components from 'src/components';
-import {DEFAULT_OPTIONS, LIFECYCLE_METHODS} from 'src/constants';
+import {DEFAULT_OPTIONS} from 'src/constants';
 
 const Functional = ({counter}) => {
   return <div>{counter}</div>;
@@ -61,6 +61,57 @@ const testIfLifecycleHookAdded = (t, method, ComponentToTest) => {
   t.true(componentDidMount.calledOnce);
 };
 
+const testNewLifecycleHooksFireInOrder = (t, method, ComponentToTest) => {
+  let newPassed = [];
+
+  const newMethodNames = [
+    'componentDidMount',
+    'shouldComponentUpdate',
+    'getSnapshotBeforeUpdate',
+    'componentDidUpdate',
+    'componentWillUnmount'
+  ];
+
+  const newMethods = newMethodNames.reduce((stubs, key) => {
+    return {
+      ...stubs,
+      [key]() {
+        newPassed.push(key);
+
+        return true;
+      }
+    };
+  }, {});
+
+  const NewComponentWithHooks = method(ComponentToTest, newMethods, {
+    ...DEFAULT_OPTIONS,
+    usePureComponent: false
+  });
+
+  const newWrapper = mount(<NewComponentWithHooks />);
+
+  const newExpectedMountResult = ['componentDidMount'];
+
+  t.deepEqual(newPassed, newExpectedMountResult);
+
+  newWrapper.setProps({
+    counter: 1
+  });
+
+  const newExpectedUpdateResult = [
+    ...newExpectedMountResult,
+    'shouldComponentUpdate',
+    'getSnapshotBeforeUpdate',
+    'componentDidUpdate'
+  ];
+
+  t.deepEqual(newPassed, newExpectedUpdateResult);
+
+  newWrapper.unmount();
+
+  t.deepEqual(newPassed, [...newExpectedUpdateResult, 'componentWillUnmount']);
+};
+
 /**
  * test if all the methods are added and fired in order
  *
@@ -71,7 +122,20 @@ const testIfLifecycleHookAdded = (t, method, ComponentToTest) => {
 const testIfLifecycleHooksFireInOrder = (t, method, ComponentToTest) => {
   let passed = [];
 
-  const methods = Object.keys(LIFECYCLE_METHODS).reduce((stubs, key) => {
+  const oldMethodNames = [
+    'componentWillMount',
+    'UNSAFE_componentWillMount',
+    'componentDidMount',
+    'componentWillReceiveProps',
+    'UNSAFE_componentWillReceiveProps',
+    'shouldComponentUpdate',
+    'componentWillUpdate',
+    'UNSAFE_componentWillUpdate',
+    'componentDidUpdate',
+    'componentWillUnmount'
+  ];
+
+  const methods = oldMethodNames.reduce((stubs, key) => {
     return {
       ...stubs,
       [key]() {
@@ -82,8 +146,6 @@ const testIfLifecycleHooksFireInOrder = (t, method, ComponentToTest) => {
     };
   }, {});
 
-  delete methods.getChildContext;
-
   const ComponentWithHooks = method(ComponentToTest, methods, {
     ...DEFAULT_OPTIONS,
     usePureComponent: false
@@ -91,7 +153,7 @@ const testIfLifecycleHooksFireInOrder = (t, method, ComponentToTest) => {
 
   const wrapper = mount(<ComponentWithHooks />);
 
-  const expectedMountResult = ['componentWillMount', 'componentDidMount'];
+  const expectedMountResult = ['componentWillMount', 'UNSAFE_componentWillMount', 'componentDidMount'];
 
   t.deepEqual(passed, expectedMountResult);
 
@@ -102,8 +164,10 @@ const testIfLifecycleHooksFireInOrder = (t, method, ComponentToTest) => {
   const expectedUpdateResult = [
     ...expectedMountResult,
     'componentWillReceiveProps',
+    'UNSAFE_componentWillReceiveProps',
     'shouldComponentUpdate',
     'componentWillUpdate',
+    'UNSAFE_componentWillUpdate',
     'componentDidUpdate'
   ];
 
@@ -128,14 +192,17 @@ test('if getClassHoc will add a lifecycle hook to the pure component passed', (t
 
 test('if getFunctionHoc will add all lifecycle hooks and fire in order for a functional component', (t) => {
   testIfLifecycleHooksFireInOrder(t, components.getFunctionHoc, Functional);
+  testNewLifecycleHooksFireInOrder(t, components.getFunctionHoc, Functional);
 });
 
 test('if getClassHoc will add all lifecycle hooks and fire in order for a standard component', (t) => {
   testIfLifecycleHooksFireInOrder(t, components.getClassHoc, Standard);
+  testNewLifecycleHooksFireInOrder(t, components.getClassHoc, Standard);
 });
 
 test('if getClassHoc will add all lifecycle hooks and fire in order for a pure component', (t) => {
   testIfLifecycleHooksFireInOrder(t, components.getClassHoc, Pure);
+  testNewLifecycleHooksFireInOrder(t, components.getClassHoc, Pure);
 });
 
 test('if getFunctionHoc will extend a standard class when isPure is false', (t) => {

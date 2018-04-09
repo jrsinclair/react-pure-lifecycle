@@ -23,10 +23,14 @@ export const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 export const LIFECYCLE_METHODS = {
   getChildContext: true,
   componentWillMount: true,
+  UNSAFE_componentWillMount: true,
   componentDidMount: true,
   componentWillReceiveProps: true,
+  UNSAFE_componentWillReceiveProps: true,
   shouldComponentUpdate: true,
   componentWillUpdate: true,
+  UNSAFE_componentWillUpdate: true,
+  getSnapshotBeforeUpdate: true,
   componentDidUpdate: true,
   componentWillUnmount: true
 };

@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "lodash": "^4.17.4",
-    "react": "^15.3.0 || ^16.0.0"
+    "react": "^15.3.0 || ^16.3.0"
   },
   "description": "Add pure function lifecycle methods to any React component",
   "devDependencies": {
